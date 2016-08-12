@@ -1,12 +1,9 @@
-Require Import List String Ascii Arith Omega.
-Import ListNotations.
+Require Export List String Ascii Arith Omega.
 
-From StructTact Require Import StructTactics Util.
+From PrettyParsing Require Import PrettyParsing.
+From StructTact Require Import StructTactics.
 
-From PrettyParsing Require Import StringUtils ListUtils Tree Pretty
-     LexicalConsiderations Tokenizer Parser OptionUtils
-     PrintTree PrettyTree NatToSymbol Error.
-Import OptionNotations.
+Import ListNotations OptionNotations.
 
 Local Open Scope char.
 
