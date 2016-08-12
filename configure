@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+DEPS=(StructTact)
+CANARIES=("StructTact.StructTactics" "Build StructTact before building PrettyParsing")
+NAMESPACE__="PrettyParsing"
+
+source coqproject.sh
