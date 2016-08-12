@@ -2,6 +2,7 @@
 
 DEPS=(StructTact)
 CANARIES=("StructTact.StructTactics" "Build StructTact before building PrettyParsing")
-NAMESPACE__="PrettyParsing"
+DIRS=(src)
+NAMESPACE_src="PrettyParsing"
 
 source coqproject.sh
