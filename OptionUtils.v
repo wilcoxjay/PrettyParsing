@@ -23,7 +23,7 @@ Fixpoint sequence {A} (l : list (option A)) : option (list A) :=
   end.
 
 Ltac unfold_option := 
-  unfold sequence, option_seq, option_bind, option_mapx in *.
+  unfold sequence, option_seq, option_bind, option_map in *.
 
 Module OptionNotations.
   Notation "f <$> o" := (@option_map _ _ f o) (at level 42, left associativity) : option.
