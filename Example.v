@@ -104,7 +104,7 @@ Module extended_example.
   Fixpoint expr_to_symbol_tree (e : expr.t) : tree symbol.t :=
     match e with
     | expr.Var n => atom (nat_to_symbol n)
-    | expr.Lam e => node [atom (symbol.of_string "lambda"); expr_to_symbol_tree e]
+    | expr.Lam e => node [atom (symbol.of_string_unsafe "lambda"); expr_to_symbol_tree e]
     | expr.App e1 e2 => node [ expr_to_symbol_tree e1; expr_to_symbol_tree e2]
     end.
 
@@ -114,9 +114,9 @@ Module extended_example.
     | node [arg1; arg2] =>
       if symbol.eq_dec (match arg1 with
                         | atom tag => tag
-                        | _ => symbol.of_string "bogus!"
+                        | _ => symbol.of_string_unsafe "bogus!"
                         end)
-                       (symbol.of_string "lambda")
+                       (symbol.of_string_unsafe "lambda")
       then expr.Lam <$> expr_from_symbol_tree arg2
       else expr.App <$> expr_from_symbol_tree arg1
                     <*> expr_from_symbol_tree arg2

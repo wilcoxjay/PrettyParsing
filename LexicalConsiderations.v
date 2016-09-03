@@ -2,6 +2,7 @@ Require Import List String Ascii.
 Import ListNotations.
 
 From PrettyParsing Require Import StringUtils.
+From StructTact Require Import StructTactics.
 
 Local Open Scope char.
 
@@ -48,7 +49,7 @@ Module symbol.
 
   Definition rev : t -> t := @List.rev _.
 
-  Definition of_string : string -> t := string_to_list.
+  Definition of_string_unsafe : string -> t := string_to_list.
 
   Definition is_empty (s : t) : bool :=
     match s with
@@ -67,6 +68,49 @@ Module symbol.
     compute; intuition discriminate.
 
   Hint Extern 3 (wf _)=> solve_wf.
+
+  Lemma wf_app : forall s1 s2, wf s1 -> wf s2 -> wf (s1 ++ s2).
+  Proof.
+    induction s1; simpl; intuition.
+    - destruct s1.
+      + destruct s2; simpl; auto.
+      + destruct H as [Ha Hs1].
+        specialize (IHs1 _ Hs1 H0).
+        simpl in IHs1.
+        simpl. auto.
+  Qed.
+
+  Definition escape (a : ascii) : list ascii :=
+    if ascii_dec a "\" then ["\"; "\"]
+    else if ascii_dec a "(" then ["\"; "l"]
+    else if ascii_dec a ")" then ["\"; "r"]
+    else if ascii_dec a " " then ["\"; "s"]
+    else if ascii_dec a "010" then ["\"; "n"]
+    else [a].
+
+  Lemma escape_wf : forall a, wf (escape a).
+  Proof.
+    unfold escape.
+    intros.
+    repeat break_if; auto.
+    simpl.
+    unfold chars.reserved.
+    compute. intuition.
+  Qed.
+
+  Fixpoint of_string_safe (s : string) : t :=
+    match s with
+    | EmptyString => ["\"; "0"]
+    | String a s =>
+      escape a ++ of_string_safe s
+    end.
+
+  Lemma of_string_safe_wf : forall s, wf (of_string_safe s).
+  Proof.
+    induction s.
+    - auto.
+    - simpl. auto using wf_app, escape_wf.
+  Qed.
 
   Definition eq_dec (x y : t) : {x = y} + {x <> y} := list_eq_dec ascii_dec x y.
 End symbol.
