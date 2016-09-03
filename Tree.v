@@ -52,6 +52,54 @@ Section tree.
                 (List.Forall_nil _)
                 (fun t l Pt Pl => List.Forall_cons _ Pt Pl) P_atom P_node t.
   End tree_ind.
+
+  Variable A_eq_dec : forall a1 a2 : A, {a1 = a2} + {a1 <> a2}.
+
+  Fixpoint tree_eq_dec (t1 t2 : tree) : {t1 = t2} + {t1 <> t2}.
+    unshelve refine (
+    let fix go_list (l1 l2 : list tree) : {l1 = l2} + {l1 <> l2}  :=
+        match l1 with
+        | [] =>
+          match l2 with
+          | [] => left eq_refl
+          | _ => right _
+          end
+        | t1 :: l1 =>
+          match l2 with
+          | [] => right _
+          | t2 :: l2 =>
+            match tree_eq_dec t1 t2 with
+            | left _ =>
+              match go_list l1 l2 with
+              | left _ => left _
+              | right _ => right _
+              end
+            | right _ => right _
+            end
+          end
+        end
+    in
+    match t1 with
+    | atom a1 =>
+      match t2 with
+      | atom a2 =>
+        match A_eq_dec a1 a2 with
+        | left _ => left _
+        | right _ => right _
+        end
+      | _ => right _
+      end
+    | node l1 =>
+      match t2 with
+      | atom a2 => right _
+      | node l2 =>
+        match go_list l1 l2 with
+        | left _ => left _
+        | right _ => right _
+        end
+      end
+    end); congruence.
+  Defined.
 End tree.
 
 Section Forall.
