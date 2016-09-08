@@ -100,6 +100,12 @@ Section tree.
       end
     end); congruence.
   Defined.
+
+  Definition get_atom (t : tree) : option A :=
+    match t with
+    | atom a => Some a
+    | _ => None
+    end.
 End tree.
 
 Section Forall.

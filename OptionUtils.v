@@ -22,6 +22,14 @@ Fixpoint sequence {A} (l : list (option A)) : option (list A) :=
              end
   end.
 
+Lemma sequence_map_Some :
+  forall A (l : list A),
+    sequence (map (@Some _) l) = Some l.
+Proof.
+  induction l; simpl; auto.
+  now rewrite IHl.
+Qed.
+
 Ltac unfold_option := 
   unfold sequence, option_seq, option_bind, option_map in *.
 

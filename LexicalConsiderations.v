@@ -1,7 +1,8 @@
 Require Import List String Ascii.
 Import ListNotations.
 
-From PrettyParsing Require Import StringUtils.
+From PrettyParsing Require Import StringUtils OptionUtils.
+Import OptionNotations.
 From StructTact Require Import StructTactics.
 
 Local Open Scope char.
@@ -98,18 +99,95 @@ Module symbol.
     compute. intuition.
   Qed.
 
-  Fixpoint of_string_safe (s : string) : t :=
+  Definition unescape (l : list ascii) : option ascii :=
+    let la_eq_dec := list_eq_dec ascii_dec in
+    if      la_eq_dec l ["\"; "\"] then Some "\"
+    else if la_eq_dec l ["\"; "l"] then Some "("
+    else if la_eq_dec l ["\"; "r"] then Some ")"
+    else if la_eq_dec l ["\"; "s"] then Some " "
+    else if la_eq_dec l ["\"; "n"] then Some "010"
+    else match l with
+         | [a] => Some a
+         | _ => None
+         end.
+
+  Lemma unescape_escape_id : forall a, unescape (escape a) = Some a.
+  Proof.
+    intros.
+    unfold unescape, escape.
+    repeat break_if; congruence.
+  Qed.
+
+  Fixpoint of_string_safe' (s : string) : t :=
+    match s with
+    | EmptyString => []
+    | String a s =>
+      escape a ++ of_string_safe' s
+    end.
+
+  Lemma of_string_safe'_wf : forall s, s = EmptyString \/ wf (of_string_safe' s).
+  Proof.
+    induction s; intuition idtac.
+    - right. subst. simpl. rewrite app_nil_r. auto using escape_wf.
+    - right. simpl. auto using wf_app, escape_wf.
+  Qed.
+
+  Fixpoint to_string' (l : t) : option string :=
+    match l with
+    | [] => Some EmptyString
+    | a :: l => if ascii_dec a "\"
+               then match l with
+                    | [] => None
+                    | b :: l => String <$> unescape [a; b] <*> to_string' l
+                    end
+               else String a <$> to_string' l
+    end.
+
+  Lemma to_string'_app_escape :
+    forall a s, to_string' (escape a ++ s) = String a <$> to_string' s.
+  Proof.
+    unfold escape.
+    intros.
+    repeat break_if; simpl; unfold_option; repeat break_match; auto; try congruence.
+  Qed.
+
+  Lemma to_string'_of_string_safe'_id : forall s, to_string' (of_string_safe' s) = Some s.
+  Proof.
+    induction s; simpl; auto.
+    now rewrite to_string'_app_escape, IHs.
+  Qed.
+
+  Definition of_string_safe (s : string) : t:=
     match s with
     | EmptyString => ["\"; "0"]
-    | String a s =>
-      escape a ++ of_string_safe s
+    | _ => of_string_safe' s
     end.
 
   Lemma of_string_safe_wf : forall s, wf (of_string_safe s).
   Proof.
-    induction s.
+    unfold of_string_safe.
+    intros.
+    break_match.
     - auto.
-    - simpl. auto using wf_app, escape_wf.
+    - pose proof of_string_safe'_wf s.
+      break_or_hyp.
+      + discriminate.
+      + auto.
+  Qed.
+
+  Definition to_string (l : t) : option string :=
+    if list_eq_dec ascii_dec l ["\"; "0"] then Some EmptyString
+    else to_string' l.
+
+  Lemma to_string_of_string_safe_id : forall s, to_string (of_string_safe s) = Some s.
+  Proof.
+    unfold to_string, of_string_safe.
+    intros.
+    repeat break_match; try congruence.
+    - simpl in *.
+      unfold escape in *.
+      repeat break_if; simpl in *; try congruence.
+    - now rewrite to_string'_of_string_safe'_id.
   Qed.
 
   Definition eq_dec (x y : t) : {x = y} + {x <> y} := list_eq_dec ascii_dec x y.
