@@ -430,3 +430,28 @@ Proof.
         -- now rewrite <- Heqt, pos_to_from_symbol.
   - now rewrite pos_to_from_symbol.
 Qed.
+
+Lemma pos_to_symbol_wf :
+  forall p, symbol.wf (pos_to_symbol p).
+Proof.
+  unfold pos_to_symbol.
+  auto using nat_to_symbol_wf.
+Qed.
+
+Lemma Z_to_symbol_wf :
+  forall z,
+    symbol.wf (Z_to_symbol z).
+Proof.
+  destruct z; simpl.
+  - compute. intuition congruence.
+  - auto using pos_to_symbol_wf.
+  - break_match.
+    + compute. intuition congruence.
+    + split.
+      * compute. intuition congruence.
+      * rewrite <- Heqt. auto using pos_to_symbol_wf.
+Qed.
+
+
+
+
