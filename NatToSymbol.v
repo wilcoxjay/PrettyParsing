@@ -213,3 +213,220 @@ Proof.
   subst c.
   rewrite nat_ascii_embedding; omega.
 Qed.
+
+Definition pos_to_symbol (p : positive) : symbol.t :=
+  nat_to_symbol (Pos.to_nat p).
+
+Definition pos_from_symbol (s : symbol.t) : positive :=
+  Pos.of_nat (nat_from_symbol s).
+
+Lemma pos_to_from_symbol : forall p, pos_from_symbol (pos_to_symbol p) = p.
+Proof.
+  intros.
+  unfold pos_to_symbol, pos_from_symbol.
+  now rewrite nat_to_from_symbol, Pos2Nat.id.
+Qed.
+
+Definition Z_to_symbol (z : Z) : symbol.t :=
+  match z with
+  | Z0 => symbol.of_string_unsafe "0"
+  | Zpos p => pos_to_symbol p
+  | Zneg p => "-"%char :: pos_to_symbol p
+  end.
+
+Definition Z_from_symbol (s : symbol.t) : Z :=
+  match s with
+  | [] => 0%Z (* bogus! *)
+  | c :: s' =>
+    if ascii_dec c "0" then 0%Z
+    else if ascii_dec c "-" then Zneg (pos_from_symbol s')
+    else Zpos (pos_from_symbol s)
+  end.
+
+Lemma inc_digits_non_empty :
+  forall l,
+    inc_digits 10 l <> [].
+Proof.
+  destruct l; simpl.
+  - congruence.
+  - repeat break_match; congruence.
+Qed.
+
+Lemma digits'_10_non_empty :
+  forall n acc, acc <> [] -> digits' 10 acc n <> [].
+Proof.
+  induction n; simpl; intros.
+  - auto.
+  - apply IHn. apply inc_digits_nonempty.
+Qed.
+
+Lemma digits_10_non_empty :
+  forall n, digits 10 n <> [].
+Proof.
+  intros.
+  unfold digits.
+  destruct (digits' 10 [0] n) eqn:?.
+  - intro. eapply digits'_10_non_empty; eauto. congruence.
+  - simpl. intro H. apply app_eq_nil in H. intuition congruence.
+Qed.
+
+Lemma nat_to_symbol_non_empty :
+  forall n, nat_to_symbol n <> [].
+Proof.
+  intros.
+  unfold nat_to_symbol.
+  intro H.
+  apply map_eq_nil in H.
+  eapply digits_10_non_empty; eauto.
+Qed.
+
+Lemma pos_to_symbol_non_empty :
+  forall p, pos_to_symbol p <> [].
+Proof.
+  intros.
+  unfold pos_to_symbol.
+  apply nat_to_symbol_non_empty.
+Qed.
+
+
+  Lemma inc_digits_does_not_end_with_0 :
+    forall l d p,
+      (forall d p, l = p ++ [d] -> d = 0 -> False) ->
+      inc_digits 10 l = p ++ [d] -> d = 0 -> False.
+  Proof.
+    induction l; simpl; intros.
+    - destruct p; simpl in *; try congruence.
+      destruct p; simpl in *; congruence.
+    - set (b := match a with
+                | 0 => false
+                | 1 => false
+                | 2 => false
+                | 3 => false
+                | 4 => false
+                | 5 => false
+                | 6 => false
+                | 7 => false
+                | 8 => false
+                | 9 => true
+                | S (S (S (S (S (S (S (S (S (S _))))))))) => false
+                end) in *.
+      destruct b eqn:? in *.
+      + repeat (destruct a; try discriminate).
+        destruct p; simpl in *; invc H0.
+        * apply inc_digits_nonempty in H4. intuition.
+        * apply IHl in H4; auto.
+          intros.
+          eapply H with (d := d) (p := 9 :: _).
+          subst. simpl. eauto. auto.
+      + destruct p; simpl in *; invc H0.
+        * discriminate.
+        * eapply H with (p0 := _ :: _). simpl. eauto. auto.
+  Qed.
+
+Lemma digits'_10_does_not_end_with_0 :
+  forall n acc d p,
+    (forall d p, acc = p ++ [d] -> d = 0 -> False) ->
+    digits' 10 acc n = p ++ [d] ->
+    d = 0 ->
+    False.
+Proof.
+  induction n; simpl; intros.
+  - eauto.
+  - eapply IHn; [| apply H0|]; auto.
+    eauto using inc_digits_does_not_end_with_0.
+Qed.
+
+Lemma digits_10_does_not_start_with_0 :
+  forall n d l,
+    n <> 0 ->
+    digits 10 n = d :: l ->
+    d = 0 ->
+    False.
+Proof.
+  unfold digits.
+  intros.
+  apply f_equal with (f := @rev _) in H0.
+  rewrite rev_involutive in *.
+  simpl in *.
+  destruct n.
+  - congruence.
+  - simpl in H0.
+    eapply digits'_10_does_not_end_with_0 in H0; auto.
+    intros.
+    repeat (destruct p; simpl in *; try congruence).
+Qed.
+
+Lemma nat_to_symbol_does_not_start_with_0 :
+  forall n c s,
+    n <> 0 ->
+    nat_to_symbol n = c :: s ->
+    c = "0"%char ->
+    False.
+Proof.
+  unfold nat_to_symbol.
+  intros.
+  destruct (digits 10 n) eqn:? in *; simpl in *; invc H0.
+  eapply digits_10_does_not_start_with_0 in Heql; auto.
+
+  pose proof (digits_in_bounds n 10 n0 ltac:(omega)).
+  rewrite Heql in *. simpl in *.
+  specialize (H0 (or_introl eq_refl)).
+  do 10 try destruct n0; simpl in H3; try discriminate.
+  - auto.
+  - omega.
+Qed.
+
+Lemma pos_to_symbol_does_not_start_with_0 :
+  forall p c s,
+    pos_to_symbol p = c :: s ->
+    c = "0"%char ->
+    False.
+Proof.
+  unfold pos_to_symbol.
+  intros.
+  eapply nat_to_symbol_does_not_start_with_0; try exact H; auto.
+  pose proof (Pos2Nat.is_pos p). omega.
+Qed.
+
+Lemma nat_to_symbol_does_not_start_with_minus :
+  forall n c s,
+    nat_to_symbol n = c :: s ->
+    c = "-"%char ->
+    False.
+Proof.
+  unfold nat_to_symbol.
+  intros.
+  destruct (digits 10 n) eqn:? in *; simpl in *; invc H.
+  pose proof (digits_in_bounds n 10 n0 ltac:(omega)).
+  rewrite Heql in *. simpl in *.
+  specialize (H (or_introl eq_refl)).
+  do 10 try destruct n0; simpl in H2; try discriminate.
+  omega.
+Qed.
+
+Lemma pos_to_symbol_does_not_start_with_minus :
+  forall p c s,
+    pos_to_symbol p = c :: s ->
+    c = "-"%char ->
+    False.
+Proof.
+  unfold pos_to_symbol.
+  intros.
+  eapply nat_to_symbol_does_not_start_with_minus; try exact H; auto.
+Qed.
+
+
+Lemma Z_to_from_symbol : forall z, Z_from_symbol (Z_to_symbol z) = z.
+Proof.
+  intros.
+  unfold Z_from_symbol, Z_to_symbol.
+  destruct z; simpl; auto.
+  - break_match.
+    + now apply pos_to_symbol_non_empty in Heqt.
+    + break_if.
+      * exfalso. eapply pos_to_symbol_does_not_start_with_0; eauto.
+      * break_if.
+        -- exfalso. eapply pos_to_symbol_does_not_start_with_minus; eauto.
+        -- now rewrite <- Heqt, pos_to_from_symbol.
+  - now rewrite pos_to_from_symbol.
+Qed.
