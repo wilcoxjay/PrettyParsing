@@ -448,12 +448,20 @@ Proof.
     reflexivity.
 Qed.
 
-Definition pos_from_symbol (s : symbol.t) :=
+(* returns `None` if the input is zero *)
+Definition pos_from_symbol' (s : symbol.t) : option positive :=
   pos_from_digits 10 (List.rev (List.map ascii_to_decimal_digit s)).
 
-Lemma pos_to_from_symbol : forall p, pos_from_symbol (pos_to_symbol p) = Some p.
+(* returns 1 if the input is zero *)
+Definition pos_from_symbol (s : symbol.t) : positive :=
+  match pos_from_symbol' s with
+  | None => 1%positive
+  | Some p => p
+  end.
+
+Lemma pos_to_from_symbol' : forall p, pos_from_symbol' (pos_to_symbol p) = Some p.
 Proof.
-  unfold pos_to_symbol, pos_from_symbol.
+  unfold pos_to_symbol, pos_from_symbol'.
   intros.
   rewrite map_map.
   erewrite map_ext_in.
@@ -463,6 +471,14 @@ Proof.
     eapply pos_digits_in_bounds.
     + lia.
     + eapply in_rev. eauto.
+Qed.
+
+Lemma pos_to_from_symbol : forall p, pos_from_symbol (pos_to_symbol p) = p.
+Proof.
+  intros.
+  unfold pos_from_symbol.
+  rewrite pos_to_from_symbol'.
+  reflexivity.
 Qed.
 
 Definition Z_to_symbol (z : Z) : symbol.t :=
@@ -477,12 +493,12 @@ Definition Z_from_symbol (s : symbol.t) : Z :=
   | [] => 0%Z (* bogus! *)
   | c :: s' =>
           if ascii_dec c "-" then
-            match pos_from_symbol s' with
+            match pos_from_symbol' s' with
             | None => 0%Z
             | Some p => Zneg p
             end
           else
-            match pos_from_symbol s with
+            match pos_from_symbol' s with
             | None => 0%Z
             | Some p => Zpos p
             end
@@ -500,8 +516,8 @@ Proof.
         cut (48 <= nat_of_ascii "-" < 58).
           { unfold nat_of_ascii. simpl. intro. lia. }
         eapply pos_to_symbol_in_bounds. subst a. erewrite Heqt. simpl. auto. }
-    rewrite <- Heqt. rewrite pos_to_from_symbol. reflexivity.
-  - rewrite pos_to_from_symbol. reflexivity.
+    rewrite <- Heqt. rewrite pos_to_from_symbol'. reflexivity.
+  - rewrite pos_to_from_symbol'. reflexivity.
 Qed.
 
 Lemma Z_to_symbol_wf :
