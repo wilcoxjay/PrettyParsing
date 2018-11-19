@@ -1,4 +1,4 @@
-Require Import List Ascii Omega.
+Require Import List Ascii String Omega.
 Import ListNotations.
 
 Require Import Psatz.
@@ -533,7 +533,3 @@ Proof.
       * compute. intuition congruence.
       * rewrite <- Heqt. auto using pos_to_symbol_wf.
 Qed.
-
-
-
-
