@@ -99,7 +99,7 @@ Lemma tokenize'_intercalate_space :
     forall s toks,
       separating s ->
       tokenize' (intercalate [" "] l ++ s) symbol.empty toks =
-      tokenize' s symbol.empty (List.rev (concat ts) ++ toks).
+      tokenize' s symbol.empty (List.rev (List.concat ts) ++ toks).
 Proof.
   unfold intercalate.
   induction 1; intros.
@@ -108,7 +108,7 @@ Proof.
     + simpl. rewrite !app_ass, rev_app_distr. simpl.
       rewrite H; auto.
     + rewrite intersperse_cons_cons.
-      cbn [concat]. rewrite !app_ass.
+      cbn [List.concat]. rewrite !app_ass.
       rewrite H by (simpl; auto).
       cbn [List.app].
       rewrite tokenize'_space.
@@ -121,7 +121,7 @@ Hint Rewrite concat_app concat_map  : list.
 
 Lemma rev_concat :
   forall A (l : list (list A)),
-    List.rev (concat l) = concat (List.rev (List.map (@List.rev _) l)).
+    List.rev (List.concat l) = List.concat (List.rev (List.map (@List.rev _) l)).
 Proof with autorewrite with list; auto.
   induction l; simpl...
   rewrite IHl; simpl...

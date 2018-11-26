@@ -3,5 +3,8 @@
 *.v.d
 *.vo
 *~
+.coqdeps.d
+.lia.cache
+Makefile.coq.conf
 _CoqProject
 Makefile.coq

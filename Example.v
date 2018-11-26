@@ -131,8 +131,10 @@ Module extended_example.
     simpl in *.
     find_inversion.
     pose proof nat_to_symbol_in_bounds n "l".
-    rewrite H1 in H.
-    concludes. compute in H. omega.
+    assert (Hl: In "l" (nat_to_symbol n)).
+      rewrite H1; left; reflexivity.
+    concludes.
+    compute in H. omega.
   Qed.
 
   Lemma expr_to_from_symbol_tree :
